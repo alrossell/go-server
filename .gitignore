@@ -1,0 +1,45 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+
+# Output of the Go build
+/bin/
+/pkg/
+
+# Dependency directories (with the advent of Go modules, vendor is less common but still used)
+/vendor/
+
+# Error logs
+*.log
+
+
+# Coverage files
+coverage.txt
+*.cover
+*.out
+
+# Private files containing sensitive information
+*.key
+*.pem
+*.cert
+
+# Configuration files
+*.toml
+*.yaml
+*.yml
+*.json
+*.xml
+*.conf
+*.ini
+*.cfg
+
+# Miscellaneous
+*.swp
+*~
+.session
+.lock
+
