@@ -4,7 +4,7 @@ import (
     "fmt"
     "context"
     "encoding/json"
-    // "log"
+    "log"
     "net/http"
     "time"
 
@@ -14,7 +14,6 @@ import (
     "go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// Book struct represents a book document in MongoDB.
 type Book struct {
     ID     string `json:"id,omitempty" bson:"_id,omitempty"`
     Title  string `json:"title,omitempty" bson:"title,omitempty"`
@@ -29,7 +28,7 @@ var client *mongo.Client
 
 // CreateBook endpoint creates a book in the database.
 func CreateBook(response http.ResponseWriter, request *http.Request) {
-    fmt.Println("Creating a Book")
+    log.Println("Creating a book")
 
     response.Header().Set("content-type", "application/json")
     var book Book
@@ -63,6 +62,24 @@ func GetBooks(response http.ResponseWriter, request *http.Request) {
     json.NewEncoder(response).Encode(books)
 }
 
+// corsMiddleware sets up the CORS headers for response, allowing cross-origin requests.
+func corsMiddleware(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8081") // Allow all origins
+        w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE") // Allowed methods
+        w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization") // Allowed headers
+
+         w.Header().Set("Access-Control-Allow-Credentials", "true")
+         // If it's a preflight request, respond with 200 without calling next handler.
+        if r.Method == "OPTIONS" {
+            w.WriteHeader(http.StatusOK)
+            return
+        }
+
+        next.ServeHTTP(w, r)
+    })
+}
+
 func main() {
 
    fmt.Println("Starting Server") 
@@ -72,8 +89,12 @@ func main() {
     client, _ = mongo.Connect(ctx, clientOptions)
 
     router := mux.NewRouter()
-    router.HandleFunc("/books", CreateBook).Methods("POST")
-    router.HandleFunc("/books", GetBooks).Methods("GET")
-    http.ListenAndServe(":5000", router)
-}
+
+    // Wrap your handlers with the CORS middleware
+    apiRouter := router.PathPrefix("/").Subrouter()
+    apiRouter.Use(corsMiddleware)
+    apiRouter.HandleFunc("/books", CreateBook).Methods("POST", "OPTIONS") // Include OPTIONS to handle preflight requests
+    apiRouter.HandleFunc("/books", GetBooks).Methods("GET", "OPTIONS")    // Include OPTIONS to handle preflight requests
+
+    http.ListenAndServe(":5000", router)}
 
