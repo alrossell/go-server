@@ -26,6 +26,37 @@ const Collection = "mySeries"
 
 var client *mongo.Client
 
+func DeleteAllBooks(response http.ResponseWriter, request *http.Request) {
+    fmt.Println("Deleting all the books")
+    response.Header().Set("content-type", "application/json")
+    
+    collection := client.Database(DataBase).Collection(Collection)
+    ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+    
+	_, err := collection.DeleteMany(ctx, bson.D{})
+    if err != nil {
+        response.WriteHeader(http.StatusInternalServerError)
+        response.Write([]byte(`{"message": "` + err.Error() + `"}`))
+        return
+    }
+    response.WriteHeader(http.StatusNoContent)
+}
+
+func DeleteBook(response http.ResponseWriter, request *http.Request) {
+    response.Header().Set("content-type", "application/json")
+    params := mux.Vars(request)
+    id, _ := params["id"]
+    collection := client.Database(DataBase).Collection(Collection)
+    ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+    _, err := collection.DeleteOne(ctx, bson.M{"_id": id})
+    if err != nil {
+        response.WriteHeader(http.StatusInternalServerError)
+        response.Write([]byte(`{"message": "` + err.Error() + `"}`))
+        return
+    }
+    response.WriteHeader(http.StatusNoContent)
+}
+
 // CreateBook endpoint creates a book in the database.
 func CreateBook(response http.ResponseWriter, request *http.Request) {
     log.Println("Creating a book")
@@ -95,6 +126,8 @@ func main() {
     apiRouter.Use(corsMiddleware)
     apiRouter.HandleFunc("/books", CreateBook).Methods("POST", "OPTIONS") // Include OPTIONS to handle preflight requests
     apiRouter.HandleFunc("/books", GetBooks).Methods("GET", "OPTIONS")    // Include OPTIONS to handle preflight requests
-
+    apiRouter.HandleFunc("/books/{id}", DeleteBook).Methods("DELETE", "OPTIONS") // Include OPTIONS to handle preflight requests
+    apiRouter.HandleFunc("/books", DeleteAllBooks).Methods("DELETE", "OPTIONS") // Include OPTIONS to handle preflight requests
+    
     http.ListenAndServe(":5000", router)}
 
